@@ -5,7 +5,7 @@ from flask import Flask, jsonify, render_template_string
 app = Flask(__name__)
 
 # Application Metadata
-APP_VERSION = os.environ.get("APP_VERSION", "2.0.0")
+APP_VERSION = os.environ.get("APP_VERSION", "3.0.0")
 ENVIRONMENT = os.environ.get("FLASK_ENV", "production")
 
 HTML_TEMPLATE = """
@@ -149,7 +149,7 @@ HTML_TEMPLATE = """
                 <h1>Flask App CI/CD Demo</h1>
                 <p class="subtitle">Automated Build, Test & Deployment to AWS EC2</p>
             </div>
-            <span class="badge">Live & Healthy</span>
+            <span class="badge">Life & Healthy</span>
         </div>
 
         <div class="info-grid">
