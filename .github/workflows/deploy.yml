@@ -1,0 +1,86 @@
+name: CI/CD Pipeline for Flask Application
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  # =============================================================
+  # STAGE 1: Continuous Integration (Build & Automated Unit Tests)
+  # =============================================================
+  build-and-test:
+    name: Build & Test (CI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Pytest Unit Tests
+        run: |
+          pytest -v --tb=short
+
+  # =============================================================
+  # STAGE 2: Continuous Deployment (Deploy to AWS EC2)
+  # =============================================================
+  deploy-to-ec2:
+    name: Deploy to AWS EC2 (CD)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    # Only deploy on pushes to the main branch (not on PRs)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Execute Remote Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            echo "----------------------------------------------------"
+            echo "?? Starting Deployment on AWS EC2..."
+            echo "Current Server Time: $(date)"
+            echo "----------------------------------------------------"
+
+            # 1. Navigate to application folder
+            cd ~/flask-cicd-ec2
+
+            # 2. Fetch and pull latest changes from main branch
+            echo "?? Pulling latest changes from repository..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 3. Activate Python virtual environment and update packages
+            echo "?? Updating Python virtual environment dependencies..."
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+
+            # 4. Restart the systemd service for Gunicorn
+            echo "?? Restarting flaskapp.service daemon..."
+            sudo systemctl restart flaskapp
+
+            # 5. Verify service status
+            echo "? Verifying service status..."
+            sudo systemctl is-active --quiet flaskapp && echo "flaskapp service is ACTIVE and RUNNING!" || (echo "flaskapp service failed to start" && exit 1)
+
+            echo "----------------------------------------------------"
+            echo "?? Deployment successfully completed!"
+            echo "----------------------------------------------------"
