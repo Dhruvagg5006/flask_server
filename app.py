@@ -5,7 +5,7 @@ from flask import Flask, jsonify, render_template_string
 app = Flask(__name__)
 
 # Application Metadata
-APP_VERSION = os.environ.get("APP_VERSION", "1.0.0")
+APP_VERSION = os.environ.get("APP_VERSION", "2.0.0")
 ENVIRONMENT = os.environ.get("FLASK_ENV", "production")
 
 HTML_TEMPLATE = """
